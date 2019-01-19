@@ -6,7 +6,7 @@ trait FixParser {
 
 case class SimpleFixParser() extends FixParser {
   override def parse(schema: FixSchema, fix: String): FixMessage = {
-    val emptyMessage = FixMessage(FixSchema(Seq()), Seq())
+    val emptyMessage = FixMessage()
     Option(fix)
       .fold(
         emptyMessage
