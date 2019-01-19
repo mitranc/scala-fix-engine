@@ -5,8 +5,11 @@ trait FixParser {
 }
 
 case class SimpleFixParser() extends FixParser {
-  override def parse(schema: FixSchema, fix: String): FixMessage = FixMessage(schema, extractFields(fix))
+  override def parse(schema: FixSchema, fix: String): FixMessage = {
+    FixMessage(schema, parse(schema, extractFields(fix)))
+  }
 
+  private def parse(schema: FixSchema, fields: Seq[FixField]): Seq[FixField] = fields
   private def extractFields(fix: String): Seq[FixField] = Option(fix)
     .fold(
       List[FixField]()
