@@ -12,3 +12,7 @@ case class Group(tag: Int, children: Seq[Seq[FixField]]) extends FixField {
 }
 
 case class FixMessage(schema: FixSchema = FixSchema(), fields: Seq[FixField] = Seq())
+
+object FixMessage {
+  val fieldDelimiter = "\001"
+}
