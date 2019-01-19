@@ -38,7 +38,7 @@ case class GroupDef(
                      childrenDefs: Seq[FieldDef]
                    ) extends PartDef
 
-case class MessageDef(partDefs: Seq[PartDef])
+case class MessageDef(msgType: String, description: String, partDefs: Seq[PartDef])
 
 object MessageDef {
   val sessionFixHeader: Seq[FieldDef] = Seq(
