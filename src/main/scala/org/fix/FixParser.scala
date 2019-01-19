@@ -17,10 +17,12 @@ case class SimpleFixParser() extends FixParser {
     ) { msgType =>
       schema.messageDefs
         .find(md => md.msgType == msgType)
-        .fold(fields)(md => parseMessage(md, fields))
+        .fold(fields)(md => parse(md, fields))
     }
 
-  def parseMessage(messageDef: MessageDef, fields: Seq[FixField]): Seq[FixField] = fields
+  private def parse(messageDef: MessageDef, fields: Seq[FixField]): Seq[FixField] = parse(messageDef.partDefs, fields)
+
+  private def parse(partDefs: Seq[PartDef], fields: Seq[FixField]): Seq[FixField] = fields
 
   private def extractFields(fix: String): Seq[FixField] = Option(fix)
     .fold(

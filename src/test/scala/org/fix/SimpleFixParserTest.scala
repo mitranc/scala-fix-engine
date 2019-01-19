@@ -21,6 +21,13 @@ class SimpleFixParserTest extends FunSuite with Matchers {
     ))))
     parser.parse(fixSchema, s"35=0\0019=1\001") shouldBe FixMessage(fixSchema, Seq(Field(35, "0"), Field(9, "1")))
   }
+  test("parse leniently when without matching message definition") {
+    val fixSchema = FixSchema(Seq(MessageDef("0", "heartbeat", Seq(
+      FieldDef(35, 'MsgType, "Message type"),
+      FieldDef(9, 'BodyLength, "Body length")
+    ))))
+    parser.parse(fixSchema, s"35=R\0019=1\001") shouldBe FixMessage(fixSchema, Seq(Field(35, "R"), Field(9, "1")))
+  }
   ignore("parse one element group") {
     val fixSchema = FixSchema(Seq(MessageDef("R", "Quote request", Seq(
       GroupDef(146, 'NoRelatedSym, "", mandatory = false,
