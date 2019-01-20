@@ -7,9 +7,7 @@ trait FixParser {
 }
 
 case class SimpleFixParser() extends FixParser {
-  override def parse(schema: FixSchema, fix: String): FixMessage = {
-    FixMessage(schema, parseFields(schema, extractFields(fix)))
-  }
+  override def parse(schema: FixSchema, fix: String): FixMessage = FixMessage(schema, parseFields(schema, extractFields(fix)))
 
   private def parseFields(schema: FixSchema, fields: List[FixField]): List[FixField] = fields
     .find(f => f.tag == 35)
