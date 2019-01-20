@@ -22,11 +22,11 @@ case class SimpleFixParser() extends FixParser {
         .fold(fields)(md => parse(md, fields))
     }
 
-  private def parse(messageDef: MessageDef, fields: List[FixField]): List[FixField] = parse(messageDef.partDefs, fields)
+  private def parse(messageDef: MessageDef, fields: List[FixField]): List[FixField] = parse(messageDef.partDefs, fields)._1
 
   @tailrec
-  private def parse(partDefs: List[PartDef], fields: List[FixField], acc: List[FixField] = Nil): List[FixField] = fields match {
-    case Nil => acc
+  private def parse(partDefs: List[PartDef], fields: List[FixField], acc: List[FixField] = Nil, fieldCount: Int = 0): (List[FixField], Int) = fields match {
+    case Nil => (acc, fieldCount)
     case ff :: ffs =>
       partDefs.find(pd => pd.tag == ff.tag) match {
         case Some(partDef) =>
@@ -34,38 +34,33 @@ case class SimpleFixParser() extends FixParser {
           partDef match {
             //fields are just added to the model
             case _: FieldDef =>
-              parse(restDefs, ffs, acc :+ ff)
+              parse(restDefs, ffs, acc :+ ff, fieldCount + 1)
             //groups need to be converted to group
             case gd: GroupDef =>
-              val group = parseGroup(ff, gd, ffs)
-              parse(restDefs, ffs.drop(countFields(group.children.flatten)), acc :+ group)
+              val (group, groupFieldCount) = parseGroup(ff, gd, ffs)
+              parse(restDefs, ffs.drop(groupFieldCount), acc :+ group, groupFieldCount)
           }
         // lenient parse - if no schema part def then add the field anyway
-        case None => parse(partDefs, ffs, acc :+ ff)
+        case None => parse(partDefs, ffs, acc :+ ff, fieldCount + 1)
       }
   }
 
-  private def parseGroup(f: FixField, groupDef: GroupDef, restFields: List[FixField]): Group = {
+  private def parseGroup(f: FixField, groupDef: GroupDef, restFields: List[FixField], fieldCount: Int = 0): (Group, Int) = {
     val subGroupDefs: List[List[PartDef]] = for (_ <- List(1 to f.value.toString.toInt)) yield groupDef.childrenDefs
-    val subGroups = parseSubGroups(subGroupDefs, restFields)
-    Group(f.tag, subGroups)
+    val (subGroups, subGroupsFieldCount) = parseSubGroups(subGroupDefs, restFields)
+    (Group(f.tag, subGroups), subGroupsFieldCount + 1)
   }
 
   @tailrec
-  private def parseSubGroups(groupPartDefs: List[List[PartDef]], restFields: List[FixField], acc: List[List[FixField]] = Nil): List[List[FixField]] = groupPartDefs match {
-    case Nil => acc
+  private def parseSubGroups(
+                              groupPartDefs: List[List[PartDef]],
+                              restFields: List[FixField],
+                              acc: List[List[FixField]] = Nil,
+                              fieldCount: Int = 0): (List[List[FixField]], Int) = groupPartDefs match {
+    case Nil => (acc, fieldCount)
     case gpd :: gpds =>
-      val subGroup = parse(gpd, restFields)
-      parseSubGroups(gpds, restFields.drop(countFields(subGroup)), subGroup +: acc)
-  }
-
-  @tailrec
-  private def countFields(fixFields: Seq[FixField], counter: Int = 0): Int = fixFields match {
-    case Nil => counter
-    case ff :: ffs => ff match {
-      case f: Field => countFields(ffs, counter + 1)
-      case g: Group => countFields(g.children.flatten ++ ffs, counter + 1)
-    }
+      val (subGroup, subGroupFieldCount) = parse(gpd, restFields)
+      parseSubGroups(gpds, restFields.drop(subGroupFieldCount), subGroup +: acc, fieldCount + subGroupFieldCount)
   }
 
   private def extractFields(fix: String): List[FixField] = Option(fix)
