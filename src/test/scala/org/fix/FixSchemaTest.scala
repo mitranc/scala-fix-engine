@@ -10,14 +10,14 @@ class FixSchemaTest extends FunSuite with Matchers {
   }
   test("generate symbol map for fields and group definition mixtures") {
     val fixSchema = FixSchema(Seq(
-      MessageDef("R", "Fictive quote request", Seq(
+      MessageDef("R", "Fictive quote request", List(
         FieldDef(1, 'Account, "Customer account"),
-        GroupDef(146, 'NoRelSym, "Number related symbols", mandatory = false, Seq(
+        GroupDef(146, 'NoRelSym, "Number related symbols", mandatory = false, List(
           FieldDef(54, 'Side, "Side of the trade"),
           FieldDef(38, 'OrderQty, "Order Quantity")
         )),
         FieldDef(58, 'Text, "Text"),
-        GroupDef(555, 'NoLegs, "", mandatory = false, Seq(
+        GroupDef(555, 'NoLegs, "", mandatory = false, List(
           FieldDef(687, 'LegQty, "Leg quantity")
         ))
       ))

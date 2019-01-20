@@ -35,13 +35,13 @@ case class GroupDef(
                      symbol: Symbol,
                      description: String,
                      mandatory: Boolean,
-                     childrenDefs: Seq[FieldDef]
+                     childrenDefs: List[PartDef]
                    ) extends PartDef
 
-case class MessageDef(msgType: String, description: String, partDefs: Seq[PartDef])
+case class MessageDef(msgType: String, description: String, partDefs: List[PartDef])
 
 object MessageDef {
-  val sessionFixHeader: Seq[FieldDef] = Seq(
+  val sessionFixHeader: List[FieldDef] = List(
     FieldDef(8, 'BeginString, "", mandatory = true),
     FieldDef(9, 'BodyLength, "", mandatory = true),
     FieldDef(35, 'MsgType, "", mandatory = true),
