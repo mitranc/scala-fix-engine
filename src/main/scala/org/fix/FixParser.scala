@@ -24,28 +24,28 @@ case class SimpleFixParser() extends FixParser {
 
   private def parse(messageDef: MessageDef, fields: List[FixField]): List[FixField] = parse(messageDef.partDefs, fields)
 
-  private def parse(partDefs: List[PartDef], fields: List[FixField]): List[FixField] = fields match {
-    case Nil => Nil
+  @tailrec
+  private def parse(partDefs: List[PartDef], fields: List[FixField], acc: List[FixField] = Nil): List[FixField] = fields match {
+    case Nil => acc
     case ff :: ffs =>
-      partDefs
-        .find(pd => pd.tag == ff.tag)
-        .fold(
-          // lenient parse - if no schema part def then add the field anyway
-          ff +: parse(partDefs.filterNot(pd => pd.tag == ff.tag), ffs)
-        ) {
-          //fields are just added to the model
-          case fd: FieldDef =>
-            ff +: parse(partDefs.filterNot(pd => pd.tag == ff.tag), ffs)
-          //groups need to be converted to group
-          case gd: GroupDef =>
-            val group = parseGroup(ff, gd, ffs)
-            val restDefs = partDefs.filterNot(pd => pd.tag == gd.tag)
-            val restFields = ffs.drop(countFields(group.children.flatten))
-            group +: parse(restDefs, restFields)
-        }
+      partDefs.find(pd => pd.tag == ff.tag) match {
+        case Some(partDef) =>
+          val restDefs = partDefs.filterNot(pd => pd.tag == ff.tag)
+          partDef match {
+            //fields are just added to the model
+            case _: FieldDef =>
+              parse(restDefs, ffs, acc :+ ff)
+            //groups need to be converted to group
+            case gd: GroupDef =>
+              val group = parseGroup(ff, gd, ffs)
+              parse(restDefs, ffs.drop(countFields(group.children.flatten)), acc :+ group)
+          }
+        // lenient parse - if no schema part def then add the field anyway
+        case None => parse(partDefs, ffs, acc :+ ff)
+      }
   }
 
-  def parseGroup(f: FixField, groupDef: GroupDef, restFields: List[FixField]): Group = {
+  private def parseGroup(f: FixField, groupDef: GroupDef, restFields: List[FixField]): Group = {
     val subGroupDefs: List[List[PartDef]] = for (_ <- List(1 to f.value.toString.toInt)) yield groupDef.childrenDefs
     val subGroups = parseSubGroups(subGroupDefs, restFields)
     Group(f.tag, subGroups)
