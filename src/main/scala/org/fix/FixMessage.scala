@@ -7,11 +7,11 @@ trait FixField {
 
 case class Field(tag: Int, value: Any) extends FixField
 
-case class Group(tag: Int, children: Seq[Seq[FixField]]) extends FixField {
+case class Group(tag: Int, children: Seq[Map[Int, FixField]]) extends FixField {
   override val value: Any = children.size
 }
 
-case class FixMessage(schema: FixSchema = FixSchema(), fields: List[FixField] = Nil)
+case class FixMessage(schema: FixSchema = FixSchema(), fields: Map[Int, FixField] = Map())
 
 object FixMessage {
   val fieldDelimiter = "\001"
