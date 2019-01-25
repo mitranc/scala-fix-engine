@@ -7,7 +7,7 @@ trait FixParser {
 }
 
 case class SimpleFixParser() extends FixParser {
-  override def parse(schema: FixSchema, fix: String): FixMessage = FixMessage(schema, parseFields(schema, extractFields(fix)))
+  override def parse(schema: FixSchema, fix: String): FixMessage = new FixMessage(schema, parseFields(schema, extractFields(fix)))
 
   private def parseFields(schema: FixSchema, fields: List[Field]): Map[Int, FixField] = fields
     .find(f => f.tag == 35)
@@ -15,20 +15,19 @@ case class SimpleFixParser() extends FixParser {
     .fold(
       fields.map(f => f.tag -> (f: FixField)).toMap
     ) { msgType =>
-      schema.messageDefs
-        .find(md => md.msgType == msgType)
+      schema.messageDefs.get(msgType)
         .fold(fields.map(f => f.tag -> (f: FixField)).toMap)(md => parse(md, fields))
     }
 
   private def parse(messageDef: MessageDef, fields: List[Field]): Map[Int, FixField] = parse(messageDef.partDefs, fields)._1
 
   @tailrec
-  private def parse(partDefs: List[PartDef], fields: List[Field], acc: Map[Int, FixField] = Map(), fieldCount: Int = 0): (Map[Int, FixField], Int) = fields match {
+  private def parse(partDefs: Map[Int, PartDef], fields: List[Field], acc: Map[Int, FixField] = Map(), fieldCount: Int = 0): (Map[Int, FixField], Int) = fields match {
     case Nil => (acc, fieldCount)
     case ff :: ffs =>
-      partDefs.find(pd => pd.tag == ff.tag) match {
+      partDefs.get(ff.tag) match {
         case Some(partDef) =>
-          val restDefs = partDefs.filterNot(pd => pd.tag == ff.tag)
+          val restDefs = partDefs - ff.tag
           partDef match {
             //fields are just added to the model
             case _: FieldDef =>
@@ -44,14 +43,14 @@ case class SimpleFixParser() extends FixParser {
   }
 
   private def parseGroup(f: FixField, groupDef: GroupDef, restFields: List[Field], fieldCount: Int = 0): (Group, Int) = {
-    val subGroupDefs: List[List[PartDef]] = for (_ <- List(1 to f.value.toString.toInt)) yield groupDef.childrenDefs
+    val subGroupDefs: List[Map[Int, PartDef]] = for (_ <- List(1 to f.value.toString.toInt)) yield groupDef.childrenDefs
     val (subGroups, subGroupsFieldCount) = parseSubGroups(subGroupDefs, restFields)
     (Group(f.tag, subGroups), subGroupsFieldCount + 1)
   }
 
   @tailrec
   private def parseSubGroups(
-                              groupPartDefs: List[List[PartDef]],
+                              groupPartDefs: List[Map[Int, PartDef]],
                               restFields: List[Field],
                               acc: List[Map[Int, FixField]] = Nil,
                               fieldCount: Int = 0): (List[Map[Int, FixField]], Int) = groupPartDefs match {

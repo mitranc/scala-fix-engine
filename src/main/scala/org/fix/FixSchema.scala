@@ -2,18 +2,25 @@ package org.fix
 
 import scala.annotation.tailrec
 
-case class FixSchema(messageDefs: Seq[MessageDef] = Seq()) {
-  val symbolTags: Map[Symbol, Int] = messageDefs.map(_.partDefs).flatMap(symbolTags(_)).toMap
+case class FixSchema(messageDefs: Map[String, MessageDef] = Map()) {
+  val symbolTags: Map[Symbol, Int] = messageDefs.values.map(_.partDefs).flatMap(symbolTags(_)).toMap
   val tagSymbols: Map[Int, Symbol] = symbolTags.map(identity(_).swap)
 
   @tailrec
-  private def symbolTags(partDefs: Seq[PartDef], accumulator: Seq[(Symbol, Int)] = Nil): Seq[(Symbol, Int)] = partDefs match {
-    case Nil => accumulator
-    case h :: tail => h match {
-      case f: FieldDef => symbolTags(tail, accumulator :+ (f.symbol, f.tag))
-      case g: GroupDef => symbolTags(g.childrenDefs ++ tail, accumulator :+ (g.symbol, g.tag))
+  private def symbolTags(partDefs: Map[Int, PartDef], accumulator: Seq[(Symbol, Int)] = Nil): Seq[(Symbol, Int)] = {
+    partDefs.values.toList match {
+      case Nil => accumulator
+      case h :: _ =>
+        h match {
+          case f: FieldDef => symbolTags(partDefs - f.tag, accumulator :+ (f.symbol, f.tag))
+          case g: GroupDef => symbolTags(g.childrenDefs ++ partDefs - g.tag, accumulator :+ (g.symbol, g.tag))
+        }
     }
   }
+}
+
+object FixSchema {
+  def apply(messageDefs: List[MessageDef]): FixSchema = new FixSchema(messageDefs.map(v => v.msgType -> v).toMap)
 }
 
 trait PartDef {
@@ -35,10 +42,20 @@ case class GroupDef(
                      symbol: Symbol,
                      description: String,
                      mandatory: Boolean,
-                     childrenDefs: List[PartDef]
+                     childrenDefs: Map[Int, PartDef]
                    ) extends PartDef
 
-case class MessageDef(msgType: String, description: String, partDefs: List[PartDef])
+object GroupDef {
+  def apply(
+             tag: Int,
+             symbol: Symbol,
+             description: String,
+             mandatory: Boolean,
+             childrenDefs: List[PartDef]
+           ): GroupDef = new GroupDef(tag, symbol, description, mandatory, childrenDefs.map(v => v.tag -> v).toMap)
+}
+
+case class MessageDef(msgType: String, description: String, partDefs: Map[Int, PartDef])
 
 object MessageDef {
   val sessionFixHeader: List[FieldDef] = List(
@@ -53,4 +70,6 @@ object MessageDef {
   val sessionFixTrailer: Seq[FieldDef] = Seq(
     FieldDef(10, 'CheckSum, "", mandatory = true),
   )
+
+  def apply(msgType: String, description: String, partDefs: List[PartDef]): MessageDef = MessageDef(msgType, description, partDefs.map(v => v.tag -> v).toMap)
 }
