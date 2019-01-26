@@ -35,21 +35,26 @@ class SimpleFixParserTest extends FunSuite with Matchers {
     parser.parse(fixSchema, s"35=R\0019=1\001") shouldBe FixMessage(fixSchema, List(Field(35, "R"), Field(9, "1")))
   }
   test("parse one element group") {
-    val fixSchema = FixSchema(List(MessageDef("R", "Quote request", List(
-      GroupDef(146, 'NoRelatedSym, "", mandatory = false,
-        List(
-          FieldDef(711, 'NoUnderlyings, ""),
-          FieldDef(537, 'QuoteType, "")
-        )),
+    val fixSchema = FixSchema(List(MessageDef("R", "Quote request",
+      List(
+        GroupDef(146, 'NoRelatedSym, "", mandatory = false,
+          List(
+            FieldDef(711, 'NoUnderlyings, ""),
+            FieldDef(537, 'QuoteType, "")
+          )),
 
-    ))))
+      ))))
     val message = parser.parse(fixSchema, s"35=R\001146=1\001711=1\001537=0")
-    message shouldBe FixMessage(fixSchema,
+    message shouldBe FixMessage(
+      fixSchema,
       List(Field(35, "R"),
         Group(146, List(
-          List(Field(711, "1"),
+          List(
+            Field(711, "1"),
             Field(537, "0")
           )
-        ))))
+        ))
+      )
+    )
   }
 }
