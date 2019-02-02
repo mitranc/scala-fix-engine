@@ -18,7 +18,7 @@ object Group {
 }
 
 case class FixMessage(schema: FixSchema = FixSchema(), fields: Map[Int, FixField] = Map()) {
-  def explain(indentation: Int = 4): List[String] = explain((f, d) => s"${" " * 4 * d}${f.tag} -> ${f.value}")
+  def explain(indentation: Int = 4): List[String] = explain((f, d) => s"${" " * indentation * d}${f.tag} -> ${f.value}")
 
   def explain[T](af: (Field, Int) => T): List[T] = {
     @tailrec
