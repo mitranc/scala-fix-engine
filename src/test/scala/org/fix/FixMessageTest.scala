@@ -1,9 +1,10 @@
 package org.fix
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class FixMessageTest extends FunSuite with Matchers {
-  val m = FixMessage(FixSchema(), List(
+class FixMessageTest extends AnyFunSuite with Matchers {
+  private val m = FixMessage(FixSchema(), List(
     Field(35, "R"),
     Group(146, List(
       List(

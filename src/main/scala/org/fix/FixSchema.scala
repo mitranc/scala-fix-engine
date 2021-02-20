@@ -1,6 +1,7 @@
 package org.fix
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ListMap
 
 case class FixSchema(messageDefs: Map[String, MessageDef] = Map()) {
   val symbolTags: Map[Symbol, Int] = messageDefs.values.map(_.partDefs).flatMap(symbolTags(_)).toMap
@@ -42,7 +43,7 @@ case class GroupDef(
                      symbol: Symbol,
                      description: String,
                      mandatory: Boolean,
-                     childrenDefs: Map[Int, PartDef]
+                     childrenDefs: ListMap[Int, PartDef]
                    ) extends PartDef
 
 object GroupDef {
@@ -52,7 +53,7 @@ object GroupDef {
              description: String,
              mandatory: Boolean,
              childrenDefs: List[PartDef]
-           ): GroupDef = new GroupDef(tag, symbol, description, mandatory, childrenDefs.map(v => v.tag -> v).toMap)
+           ): GroupDef = new GroupDef(tag, symbol, description, mandatory, ListMap(childrenDefs.map(v => v.tag -> v): _*))
 }
 
 case class MessageDef(msgType: String, description: String, partDefs: Map[Int, PartDef])

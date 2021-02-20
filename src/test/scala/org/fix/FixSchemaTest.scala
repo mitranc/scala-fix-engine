@@ -1,13 +1,9 @@
 package org.fix
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class FixSchemaTest extends FunSuite with Matchers {
-  test("generate symbol map for empty message") {
-    val schema = FixSchema()
-    schema.tagSymbols shouldBe empty
-    schema.symbolTags shouldBe empty
-  }
+class FixSchemaTest extends AnyFunSuite with Matchers {
   test("generate symbol map for fields and group definition mixtures") {
     val fixSchema = FixSchema(
       List(
